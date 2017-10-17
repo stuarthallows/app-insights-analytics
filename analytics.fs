@@ -5,6 +5,52 @@ traces | project timestamp, message | take 10
 
 traces | take 10
 
+traces 
+| search "Digitail Tag {@AALASInfo} scanned at AALAS" 
+| where severityLevel > 0
+| where customDimensions.Application == "Ai.Connect.UI"
+| sort by timestamp desc 
+
+// messages grouped by device
+traces 
+| search "Digitail Tag {@AALASInfo} scanned at AALAS" 
+| where customDimensions.Application == "Ai.Connect.UI"
+| summarize device_count = count() by tostring(customDimensions['AiConnectDeviceName'])
+
+// efficiently fetch most recent 
+traces
+| where customDimensions.SourceContext =~ "Somark.datahub.devices.datahubdevicemonitor" // case insensitive
+| where client_Type == "PC" // case sensitive
+| where severityLevel == 0 or severityLevel == 1
+| top 10 by timestamp 
+
+
+traces
+| take 10 
+
+// search across all columns in one table
+search in (traces) "connect"
+| take 10 
+
+// search across all columns in all tables
+search "connect"
+|take 10 
+
+// column selection
+traces
+| top 10 by timestamp 
+| project message, severityLevel, itemType, utc = timestamp , local = timestamp+630m
+
+// summarise by group
+traces
+| where strlen(customDimensions.AiConnectDeviceName) > 0
+| summarize count(severityLevel) by tostring(customDimensions['AiConnectDeviceName'])
+
+// summarise by scalar by using bin
+traces
+| where isnotempty(customDimensions.AiConnectDeviceName)
+| summarize count(severityLevel) by bin(timestamp, 1d), tostring(customDimensions['AiConnectDeviceName'])
+
 // how many records across all tables
 union * | count 
 
